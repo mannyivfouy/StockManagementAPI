@@ -33,12 +33,19 @@ const userSchema = new mongoose.Schema({
       message: "Passwords not match.",
     },
   },
-  imageUrl: { type: String, default: "/images/default_img.png" },
+  imageUrl: { type: String, default: "/images/avatar.png" },
   role: { type: String, default: "User" },
   created_date: { type: Date, default: Date.now },
 });
 
 userSchema.plugin(AutoIncrement, { inc_field: "userID" });
+
+userSchema.set("toJSON", {
+  transform: (doc, ret) => {
+    const { _id, userID, ...rest } = ret;
+    return { _id, userID, ...rest };
+  },
+});
 
 const User = mongoose.model("Users", userSchema);
 
@@ -56,7 +63,7 @@ app.post("/api/user", async (req, res) => {
 // Get All User
 app.get("/api/user", async (req, res) => {
   try {
-    const user = await User.find();
+    const user = await User.find().select("-password -confirmPassword");
     res.status(200).json(user);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -66,7 +73,9 @@ app.get("/api/user", async (req, res) => {
 // Get User By Username
 app.get("/api/user/:username", async (req, res) => {
   try {
-    const user = await User.findOne({ username: req.params.username });
+    const user = await User.findOne({ username: req.params.username }).select(
+      "-password -confirmPassword"
+    );
 
     if (!user) {
       return res.status(404).json({ message: "User Not Found" });
@@ -81,17 +90,15 @@ app.get("/api/user/:username", async (req, res) => {
 // Get User By ID
 
 // Delete User By Username
-app.delete("/api/user/:username", async (req, res) => {
+app.get("/api/user/id/:id", async (req, res) => {
   try {
-    const user = await User.findOneAndDelete({ username: req.params.username });
-
-    if (!user) {
-      return res.status(404).json({ message: "User Not Found" });
-    }
-
-    res.status(200).json({ message: "User deleted successfully" });
+    const user = await User.findById(req.params.id).select(
+      "-password -confirmPassword"
+    );
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(user);
   } catch (err) {
-    res.status(500).json.apply({ message: err.message });
+    res.status(500).json({ message: err.message });
   }
 });
 
