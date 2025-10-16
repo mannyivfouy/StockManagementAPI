@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const AutoIncrement = require("mongoose-sequence")(mongoose);
 
 const app = express();
 const PORT = 4000;
@@ -15,6 +16,7 @@ mongoose
   .catch((err) => console.error("DataBase Connection Error!", err));
 
 const userSchema = new mongoose.Schema({
+  userID: { type: Number, unique: true },
   fullname: { type: String, required: true },
   username: { type: String, required: true },
   dateOfBirth: { type: Date, required: true },
@@ -35,6 +37,8 @@ const userSchema = new mongoose.Schema({
   role: { type: String, default: "User" },
   created_date: { type: Date, default: Date.now },
 });
+
+userSchema.plugin(AutoIncrement, { inc_field: "userID" });
 
 const User = mongoose.model("Users", userSchema);
 
@@ -73,6 +77,8 @@ app.get("/api/user/:username", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+
+// Get User By ID
 
 // Delete User By Username
 app.delete("/api/user/:username", async (req, res) => {
