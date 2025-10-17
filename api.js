@@ -11,7 +11,8 @@ app.use(cors());
 app.use("/images", express.static("images"));
 
 mongoose
-  .connect("mongodb+srv://yivfouy:qZ8ghvwTkXxIWi2R@cluster0.jzoy2rv.mongodb.net/StockManagementSystem")
+  // .connect("mongodb+srv://yivfouy:qZ8ghvwTkXxIWi2R@cluster0.jzoy2rv.mongodb.net/StockManagementSystem")   // --------------> Cloud Database
+  .connect("mongodb://localhost:27017/StockManagementDB") // ----------------> Local Database
   .then(() => console.log("Mongo Connected!!!"))
   .catch((err) => console.error("DataBase Connection Error!", err));
 
@@ -23,16 +24,6 @@ const userSchema = new mongoose.Schema({
   gender: { type: String, required: true },
   email: { type: String, required: true },
   password: { type: String, required: true },
-  confirmPassword: {
-    type: String,
-    required: true,
-    validate: {
-      validator: function (value) {
-        return value === this.password;
-      },
-      message: "Passwords not match.",
-    },
-  },
   imageUrl: { type: String, default: "/images/avatar.png" },
   role: { type: String, default: "User" },
   created_date: { type: Date, default: Date.now },
@@ -49,21 +40,10 @@ userSchema.set("toJSON", {
 
 const User = mongoose.model("Users", userSchema);
 
-// Add User
-app.post("/api/user", async (req, res) => {
-  try {
-    const user = new User(req.body);
-    await user.save();
-    res.status(201).json(user);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
-
 // Get All User
 app.get("/api/user", async (req, res) => {
   try {
-    const user = await User.find().select("-password -confirmPassword");
+    const user = await User.find().select("-password");
     res.status(200).json(user);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -74,7 +54,7 @@ app.get("/api/user", async (req, res) => {
 app.get("/api/user/:username", async (req, res) => {
   try {
     const user = await User.findOne({ username: req.params.username }).select(
-      "-password -confirmPassword"
+      "-password"
     );
 
     if (!user) {
@@ -88,17 +68,79 @@ app.get("/api/user/:username", async (req, res) => {
 });
 
 // Get User By ID
-
-// Delete User By Username
 app.get("/api/user/id/:id", async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select(
-      "-password -confirmPassword"
+    const user = await User.findOne({ userID: req.params.id }).select(
+      "-password"
     );
-    if (!user) return res.status(404).json({ message: "User not found" });
-    res.json(user);
+
+    if (!user) {
+      return res.status(404).json({ message: "User Not Found" });
+    }
+
+    res.status(200).json(user);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+});
+
+// Delete User By Username
+app.delete("/api/user/:username", async (req, res) => {
+  try {
+    const user = await User.findOneAndDelete({ username: req.params.username });
+
+    if (!user) {
+      return res.status(404).json({ message: "User Not Found" });
+    }
+
+    res.status(200).json({ message: "User deleted successfully", user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Delete User By ID
+app.delete("/api/user/id/:id", async (req, res) => {
+  try {
+    const user = await User.findOneAndDelete({ userID: req.params.id });
+
+    if (!user) {
+      return res.status(404).json({ message: "User Not Found" });
+    }
+
+    res.status(200).json({ message: "User deleted successfully", user });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Add User
+app.post("/api/user", async (req, res) => {
+  try {
+    const user = new User(req.body);
+    await user.save();
+    res.status(201).json(user);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Update User By ID
+app.put("/api/user/id/:id", async (req, res) => {
+  try {
+    const user = await User.findOneAndUpdate(
+      { userID: req.params.id },
+      req.body,
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      return res.status(400).json({ message: "User Not Found" });
+    }
+
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 
