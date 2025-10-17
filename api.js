@@ -11,7 +11,7 @@ app.use(cors());
 app.use("/images", express.static("images"));
 
 mongoose
-  .connect("mongodb://localhost:27017/StockManagementDB")
+  .connect("mongodb+srv://yivfouy:qZ8ghvwTkXxIWi2R@cluster0.jzoy2rv.mongodb.net/StockManagementSystem")
   .then(() => console.log("Mongo Connected!!!"))
   .catch((err) => console.error("DataBase Connection Error!", err));
 
