@@ -16,6 +16,8 @@ mongoose
   .then(() => console.log("Mongo Connected!!!"))
   .catch((err) => console.error("DataBase Connection Error!", err));
 
+// ! Endpoint User //
+
 const userSchema = new mongoose.Schema({
   userID: { type: Number, unique: true },
   fullname: { type: String, required: true },
@@ -24,7 +26,7 @@ const userSchema = new mongoose.Schema({
   gender: { type: String, required: true },
   email: { type: String, required: true },
   password: { type: String, required: true },
-  imageUrl: { type: String, default: "/images/avatar.png" },
+  imageUrl: { type: String, default: "/images/default.png" },
   role: { type: String, default: "User" },
   created_date: { type: Date, default: Date.now },
 });
@@ -39,6 +41,9 @@ userSchema.set("toJSON", {
 });
 
 const User = mongoose.model("Users", userSchema);
+
+
+
 
 // Get All User
 app.get("/api/user", async (req, res) => {
@@ -128,8 +133,9 @@ app.post("/api/user", async (req, res) => {
 // Update User By ID
 app.put("/api/user/id/:id", async (req, res) => {
   try {
+    const id = req.params.id;
     const user = await User.findOneAndUpdate(
-      { userID: req.params.id },
+      { userID: id },
       req.body,
       { new: true, runValidators: true }
     );
@@ -143,6 +149,64 @@ app.put("/api/user/id/:id", async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 });
+
+// ! image
+
+const multer = require("multer");
+const path = require("path");
+
+// Save uploaded files in 'images/' folder
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, "images/"),
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+const upload = multer({ storage });
+
+// Upload avatar
+app.post("/api/user/upload-avatar", upload.single("avatar"), (req, res) => {
+  if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+  const url = `/images/${req.file.filename}`;
+  res.status(200).json({ url });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ! Endpoint Product //
+
+const productSchema = new mongoose.Schema({
+  productID: { type: Number, unique: true },
+  product_name: { type: String, required: true },
+  price: { type: Number, required: true },
+  qty: { type: Number, require: true },
+});
+
+productSchema.plugin(AutoIncrement, { inc_field: "productID" });
+
+productSchema.set("toJSON", {
+  transform: (doc, ret) => {
+    const { _id, productID, ...rest } = ret;
+    return { _id, productID, ...rest };
+  },
+});
+
+const Product = mongoose.model("Products", userSchema);
 
 app.listen(PORT, () => {
   console.log(`Server Running At http://localhost:${PORT}`);
